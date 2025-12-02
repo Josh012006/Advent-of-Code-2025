@@ -27,7 +27,7 @@ int main() {
                 newPos = position - offset;
                 newPos += (newPos < 0) ? 100 : 0;
 
-                count += (newPos > position) || (newPos < position && newPos == 0);
+                count += (newPos > position && position != 0) || (newPos < position && newPos == 0);
             }
 
             position = newPos;
