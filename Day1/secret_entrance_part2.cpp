@@ -16,21 +16,19 @@ int main() {
             int distance = std::stoi(line.substr(1));
 
             int newPos;
-            int offset;
-            if(direction == 'R') {
-                offset = position + distance;
-                newPos = offset % 100;
 
+            count += distance / 100;
+            int offset = distance % 100;
+
+            if(direction == 'R') {
+                newPos = (position + offset) % 100;
                 count += newPos < position;
             } else {
-                offset = position - distance;
-                newPos = offset % 100;
+                newPos = position - offset;
                 newPos += (newPos < 0) ? 100 : 0;
 
                 count += (newPos > position) || (newPos < position && newPos == 0);
             }
-
-            count += distance / 100;
 
             position = newPos;
         }
