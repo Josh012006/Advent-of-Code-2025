@@ -46,22 +46,21 @@ public:
 class Circuit {
 public:
     Circuit() {}
-    Circuit(Vertex3 initVal) {
+    Circuit(Vertex3 initVal, int idx) : uniqueKey(idx) {
         std::vector<Vertex3> blank; blank.push_back(initVal);
         this->content = blank;
     }
-    Circuit(std::vector<Vertex3> init) {
-        this->content = init;
-    }
-    Circuit(std::vector<Vertex3> toJoin1, std::vector<Vertex3> toJoin2) {
+    Circuit(std::vector<Vertex3> toJoin1, std::vector<Vertex3> toJoin2, int idx) : uniqueKey(idx) {
         this->content = toJoin1;
-        for(auto v : toJoin2) { this->content.push_back(v); };
+        for(auto v : toJoin2) { this->content.push_back(v); }
     }
 
     std::vector<Vertex3> content;
+    int uniqueKey;
 
     bool operator<(Circuit const& other) const {
-        return this->content.size() < other.content.size();
+        if(this->content.size() != other.content.size()) return this->content.size() > other.content.size();
+        return this->uniqueKey > other.uniqueKey;
     }
     void add(Vertex3 newV) { this->content.push_back(newV); }
     bool contains(Vertex3 const v) const {
@@ -87,21 +86,23 @@ std::vector<std::vector<unsigned long long>> distMatrix(std::vector<Vertex3> ver
 }
 
 
-bool notConnected(Vertex3 v1, Vertex3 v2, std::set<Circuit> circuits, Circuit (&result)[2]) {
-    Circuit cv1, cv2;
-    std::set<Circuit>::iterator it1, it2;
+bool notConnected(Vertex3 v1, Vertex3 v2, std::set<Circuit>& circuits, Circuit (&result)[2]) {
+
+    std::set<Circuit>::iterator it1 = circuits.end();
+    std::set<Circuit>::iterator it2 = circuits.end();
+
     for(auto it = circuits.begin(); it != circuits.end(); ++it) {
-        if(std::find(it->content.begin(), it->content.end(), v1) != it->content.end()) {
-            it1 = it; cv1 = *it;
+        if(it->contains(v1)) {
+            it1 = it;
         }
 
-        if(std::find(it->content.begin(), it->content.end(), v2) != it->content.end()) {
-            it2 = it; cv2 = *it;
+        if(it->contains(v2)) {
+            it2 = it;
         }
     }
 
-    if(it1 != it2) {
-        result[0] = cv1; result[1] = cv2;
+    if(it1 != circuits.end() && it2 != circuits.end() && it1 != it2) {
+        result[0] = *it1; result[1] = *it2;
         return true;
     }
     return false;
@@ -127,11 +128,13 @@ int main() {
 
         std::set<Circuit> circuits;
         // Initialize circuits
-        for(Vertex3 v : vertices) {
-            Circuit init(v); circuits.insert(init);
+        for(int i = 0; i < vertices.size(); ++i) {
+            Vertex3 v = vertices[i];
+            Circuit init(v, i); circuits.insert(init);
         }
 
         bool change;
+        int numConnect = 0;
 
         do {
             change = false;
@@ -142,23 +145,40 @@ int main() {
 
             for (int i = 0; i < n; ++i) {
                 for(int j = i + 1; j < n; ++j) {
-                    if(matrix[i][j] <= minDist && notConnected(vertices[i], vertices[j], circuits, toConnect)) {
+                    Circuit res[2];
+                    if(notConnected(vertices[i], vertices[j], circuits, res) && matrix[i][j] < minDist) {
+                        minDist = matrix[i][j];
+                        toConnect[0] = res[0];
+                        toConnect[1] = res[1];
                         change = true;
                     }
                 }
             }
 
             if(change) {
-                Circuit toInsert(toConnect[0].content, toConnect[1].content);
+                std::cout << "Connecting circuits of sizes "
+                          << toConnect[0].content.size() << " and "
+                          << toConnect[1].content.size() << std::endl;
+
+                Circuit toInsert(toConnect[0].content, toConnect[1].content, toConnect[0].uniqueKey);
                 circuits.erase(toConnect[0]); circuits.erase(toConnect[1]);
                 circuits.insert(toInsert);
             }
 
-        } while(change);
+            ++numConnect;
+
+        } while(numConnect <= 10);
+
+        std::cout << "Right now there are " << circuits.size() << " circuits." << std::endl;
+
+        for(auto it = circuits.begin(); it != circuits.end(); ++it) {
+            std::cout << "There is one circuit of size " << it->content.size() << std::endl;
+        }
 
         int result = 1;
-        int seen = 0;
+        int seen = 1;
         for(auto it = circuits.begin(); it != circuits.end() && seen <= 3; ++it) {
+            std::cout << "Multiplied circuit of size" << it->content.size() << std::endl;
             result *= it->content.size(); ++seen;
         }
 
