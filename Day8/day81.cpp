@@ -4,6 +4,8 @@
 #include <string>
 #include <set>
 #include <array>
+#include <algorithm>
+#include <limits>
 
 
 
@@ -37,7 +39,7 @@ public:
     }
 
     bool operator==(Vertex3 const& other) const {
-        return this->x == other->x && this->y == other->y && this->z == other->z;
+        return this->x == other.x && this->y == other.y && this->z == other.z;
     }
 };
 
@@ -53,17 +55,17 @@ public:
     }
     Circuit(std::vector<Vertex3> toJoin1, std::vector<Vertex3> toJoin2) {
         this->content = toJoin1;
-        for(auto v : toJoin2) { this->content.push_back(v) };
+        for(auto v : toJoin2) { this->content.push_back(v); };
     }
 
     std::vector<Vertex3> content;
 
     bool operator<(Circuit const& other) const {
-        return this->content.size() < other->content.size();
+        return this->content.size() < other.content.size();
     }
     void add(Vertex3 newV) { this->content.push_back(newV); }
     bool contains(Vertex3 const v) const {
-        return content.find(content.begin(), content.end(), v) != content.end();
+        return std::find(content.begin(), content.end(), v) != content.end();
     }
 };
 
@@ -87,13 +89,13 @@ std::vector<std::vector<unsigned long long>> distMatrix(std::vector<Vertex3> ver
 
 bool notConnected(Vertex3 v1, Vertex3 v2, std::set<Circuit> circuits, Circuit (&result)[2]) {
     Circuit cv1, cv2;
-    auto it1, it2;
+    std::set<Circuit>::iterator it1, it2;
     for(auto it = circuits.begin(); it != circuits.end(); ++it) {
-        if(*it->content.find(v1) != *it->content.end()) {
+        if(std::find(it->content.begin(), it->content.end(), v1) != it->content.end()) {
             it1 = it; cv1 = *it;
         }
 
-        if(*it->content.find(v2) != *it->content.end()) {
+        if(std::find(it->content.begin(), it->content.end(), v2) != it->content.end()) {
             it2 = it; cv2 = *it;
         }
     }
@@ -136,6 +138,8 @@ int main() {
             unsigned long long minDist = std::numeric_limits<unsigned long long>::max();
             Circuit toConnect[2];
 
+            int n = matrix.size();
+
             for (int i = 0; i < n; ++i) {
                 for(int j = i + 1; j < n; ++j) {
                     if(matrix[i][j] <= minDist && notConnected(vertices[i], vertices[j], circuits, toConnect)) {
@@ -150,15 +154,15 @@ int main() {
                 circuits.insert(toInsert);
             }
 
-        } while(change)
+        } while(change);
 
         int result = 1;
         int seen = 0;
         for(auto it = circuits.begin(); it != circuits.end() && seen <= 3; ++it) {
-            result *= *it; ++seen;
+            result *= it->content.size(); ++seen;
         }
 
-        return result;
+        std::cout << result << std::endl;
 
     }
 
